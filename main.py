@@ -29,22 +29,22 @@ async def on_message(message):
 
 async def main():
     last_message = ""
-    print("Running bot!")
-
     # TODO: formatting, info about game/day, messages that don't start with townsend, etc.
     # TODO: does this actually work? can't check because Mike Townsend (will not be playing until the next On Season)
-    for data in await events.stream_events(url="http://api.sibr.dev/replay/v1/replay?from=2021-07-02T05:58:04.17Z"):
-        print("Found new schedule object!")
-        schedule = data.value.games.schedule
-        for game in schedule:
-            message = game.lastUpdate
-            if message.lower().startswith("mike townsend") and message != last_message:
-                last_message = message
-                for channel in channels:
-                    await channel.send("Mike Townsend (" + message[14:] + ")")
+    async for data in events.stream_events(url="http://api.sibr.dev/replay/v1/replay?from=2021-07-02T05:58:04.17Z"):
+        if "games" in data:
+            schedule = data["games"]["schedule"]
+            for game in schedule:
+                message = game["lastUpdate"]
+                if message.lower().startswith("mike townsend") and message != last_message:
+                    last_message = message
+                    for channel in channels:
+                        await channel.send("Mike Townsend (" + message[14:] + ")")
 
+async def combine():
+    token = open("token.txt").read()
+    run_feed = asyncio.create_task(main())
+    return await asyncio.gather(run_feed, client.run(token))
 
 if __name__ == "__main__":
-    with open("token.txt") as token:
-        client.run(token.read())
-    asyncio.run(main())
+    asyncio.run(combine())
