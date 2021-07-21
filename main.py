@@ -1,11 +1,14 @@
 # A discord bot that posts whenever Mike Townsend does something.
 import asyncio
+from multiprocessing import Process
 from blaseball_mike import events
 import discord
 
 client = discord.Client()
 
+# FIXME: this doesn't sync between threads, and I have no idea how to make it do that!
 channels = []
+
 
 @client.event
 async def on_message(message):
@@ -27,24 +30,30 @@ async def on_message(message):
             await message.channel.send("Mike Townsend (can only listen to members with Manage Channel permissions)")
 
 
-async def main():
+async def blaseball_loop():
     last_message = ""
     # TODO: formatting, info about game/day, messages that don't start with townsend, etc.
-    # TODO: does this actually work? can't check because Mike Townsend (will not be playing until the next On Season)
-    async for data in events.stream_events(url="http://api.sibr.dev/replay/v1/replay?from=2021-07-02T05:58:04.17Z"):
+    async for data in events.stream_events(url="https://www.blaseball.com/events/streamData"):
         if "games" in data:
             schedule = data["games"]["schedule"]
             for game in schedule:
-                message = game["lastUpdate"]
-                if message.lower().startswith("mike townsend") and message != last_message:
-                    last_message = message
-                    for channel in channels:
-                        await channel.send("Mike Townsend (" + message[14:] + ")")
+                if game["awayTeamName"] == "Seattle Garages" or game["homeTeamName"] == "Seattle Garages":
+                    message = game["lastUpdate"]
+                    if message.lower().startswith("mike townsend") and message != last_message:
+                        last_message = message
+                        for channel in channels:
+                            await channel.send("Mike Townsend (" + message[14:] + ")")
 
-async def combine():
+
+def blaseball_main():
+    asyncio.run(blaseball_loop())
+
+
+def discord_main():
     token = open("token.txt").read()
-    run_feed = asyncio.create_task(main())
-    return await asyncio.gather(run_feed, client.run(token))
+    client.run(token)
+
 
 if __name__ == "__main__":
-    asyncio.run(combine())
+    Process(target=blaseball_main).start()
+    Process(target=discord_main).start()
