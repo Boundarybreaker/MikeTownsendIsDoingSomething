@@ -1,6 +1,7 @@
 # Token file for the bot
 token.txt
 .idea/
+channels.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
