@@ -56,6 +56,7 @@ def save_config():
 
 async def blaseball_loop():
     last_message = ""
+    # update me to `https://www.blaseball.com/events/streamData` to get live feed!
     async for data in events.stream_events(url="https://api.sibr.dev/replay/v1/replay?from=2021-07-20T02:11:50-07:00"):
         if not data:
             continue
